@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Project Progress · Dashboard</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --bg-elev: #161b22;
+    --bg-elev-2: #1c232d;
+    --border: #2a323d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --text-faint: #6e7681;
+    --accent: #4f8cff;
+    --accent-soft: rgba(79, 140, 255, 0.15);
+    --green: #3fb950;
+    --amber: #d29922;
+    --red: #f85149;
+    --purple: #a371f7;
+    --radius: 14px;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg: #f4f6fa;
+    --bg-elev: #ffffff;
+    --bg-elev-2: #f0f3f8;
+    --border: #e1e6ed;
+    --text: #1c2430;
+    --text-dim: #5a6675;
+    --text-faint: #8a94a3;
+    --accent-soft: rgba(79, 140, 255, 0.12);
+    --shadow: 0 8px 30px rgba(20, 30, 50, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 22px 64px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand .logo {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 19px;
+    box-shadow: 0 4px 14px rgba(79, 140, 255, 0.4);
+    flex-shrink: 0;
+  }
+  .brand h1 { font-size: 19px; font-weight: 650; letter-spacing: -0.2px; }
+  .brand p { font-size: 12.5px; color: var(--text-dim); }
+
+  .top-actions { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--text-dim);
+    cursor: pointer;
+    display: grid; place-items: center;
+    font-size: 16px;
+    transition: all 0.18s ease;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* ---------- Stats row ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 26px;
+  }
+  .stat {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .stat .value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-top: 6px; }
+  .stat .sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+  .stat .accent-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .search {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search input {
+    width: 100%;
+    padding: 10px 14px 10px 38px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.18s ease;
+  }
+  .search input:focus { border-color: var(--accent); }
+  .search input::placeholder { color: var(--text-faint); }
+  .search .sicon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 14px; }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 550;
+    cursor: pointer;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+  }
+  .chip:hover { color: var(--text); }
+  .chip.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ---------- Project grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow); }
+
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .card-title-wrap { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .card-avatar {
+    width: 44px; height: 44px; border-radius: 11px;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 17px; color: #fff;
+    flex-shrink: 0;
+  }
+  .card-title { font-size: 16px; font-weight: 650; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-owner { font-size: 12.5px; color: var(--text-dim); }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 650;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge.on-track { background: rgba(63, 185, 80, 0.16); color: var(--green); }
+  .badge.at-risk { background: rgba(210, 153, 34, 0.16); color: var(--amber); }
+  .badge.delayed { background: rgba(248, 81, 73, 0.16); color: var(--red); }
+  .badge.done { background: rgba(163, 113, 247, 0.16); color: var(--purple); }
+
+  .card-desc { font-size: 13px; color: var(--text-dim); margin: 14px 0 16px; flex: 1; }
+
+  .progress-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+  .progress-row .ptext { font-size: 12.5px; color: var(--text-dim); font-weight: 550; }
+  .progress-row .pval { font-size: 13.5px; font-weight: 700; }
+  .bar {
+    height: 8px;
+    background: var(--bg-elev-2);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    width: 0;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 18px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .meta-item { display: flex; align-items: center; gap: 6px; }
+  .meta-item .mi-val { color: var(--text); font-weight: 600; }
+
+  .avatars { display: flex; }
+  .avatars .a {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--bg-elev);
+    margin-left: -8px;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700; color: #fff;
+  }
+  .avatars .a:first-child { margin-left: 0; }
+
+  .due { display: flex; align-items: center; gap: 6px; }
+  .due.overdue { color: var(--red); }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-faint);
+    grid-column: 1 / -1;
+  }
+  .empty .big { font-size: 40px; margin-bottom: 12px; }
+
+  footer.foot {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--text-faint);
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 50;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+  }
+  .modal-head {
+    padding: 22px 24px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    position: sticky; top: 0;
+    background: var(--bg-elev);
+  }
+  .modal-body { padding: 22px 24px 26px; }
+  .modal h2 { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+  .modal .m-owner { font-size: 13px; color: var(--text-dim); margin-top: 3px; }
+  .close-x {
+    border: none; background: var(--bg-elev-2); color: var(--text-dim);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 17px;
+    flex-shrink: 0;
+  }
+  .close-x:hover { color: var(--text); }
+
+  .m-section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-faint); font-weight: 650; margin: 22px 0 12px; }
+  .m-section-title:first-child { margin-top: 0; }
+
+  .milestone { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+  .ms-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    flex-shrink: 0; display: grid; place-items: center;
+    font-size: 11px; color: #fff;
+    border: 2px solid var(--border);
+  }
+  .ms-dot.done { background: var(--green); border-color: var(--green); }
+  .ms-dot.active { background: var(--accent); border-color: var(--accent); }
+  .ms-label { font-size: 13.5px; flex: 1; }
+  .ms-label.done { color: var(--text-faint); text-decoration: line-through; }
+  .ms-date { font-size: 12px; color: var(--text-faint); }
+
+  .stat-mini-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .stat-mini {
+    background: var(--bg-elev-2);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-mini .v { font-size: 21px; font-weight: 700; }
+  .stat-mini .l { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .wrap { padding: 18px 14px 48px; }
+    header.top { margin-bottom: 20px; }
+    .brand h1 { font-size: 17px; }
+    .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat { padding: 13px 14px; }
+    .stat .value { font-size: 23px; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .filters { overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+    .filters::-webkit-scrollbar { display: none; }
+    .grid { grid-template-columns: 1fr; gap: 12px; }
+    .card { padding: 17px; }
+    .stat-mini-row { grid-template-columns: 1fr 1fr 1fr; }
+    .modal-head { padding: 18px 18px 14px; }
+    .modal-body { padding: 18px; }
+  }
+  @media (max-width: 380px) {
+    .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">P</div>
+      <div>
+        <h1>Project Progress</h1>
+        <p>Portfolio overview · updated today</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </div>
+  </header>
+
+  <section class="stats" id="statsRow"></section>
+
+  <div class="toolbar">
+    <div class="search">
+      <span class="sicon">⌕</span>
+      <input type="text" id="searchInput" placeholder="Search projects or owners…" />
+    </div>
+    <div class="filters" id="filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="on-track">On Track</button>
+      <button class="chip" data-filter="at-risk">At Risk</button>
+      <button class="chip" data-filter="delayed">Delayed</button>
+      <button class="chip" data-filter="done">Completed</button>
+    </div>
+  </div>
+
+  <section class="grid" id="grid"></section>
+
+  <footer class="foot">Project Progress Dashboard · single-file build · click a card for details</footer>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+/* ---------------- Data ---------------- */
+const PALETTE = {
+  blue: "#4f8cff", purple: "#a371f7", green: "#3fb950",
+  amber: "#d29922", pink: "#ec6cb9", teal: "#39c5cf", red: "#f85149"
+};
+
+const STATUS_COLOR = {
+  "on-track": PALETTE.green,
+  "at-risk": PALETTE.amber,
+  "delayed": PALETTE.red,
+  "done": PALETTE.purple
+};
+const STATUS_LABEL = {
+  "on-track": "On Track", "at-risk": "At Risk", "delayed": "Delayed", "done": "Completed"
+};
+
+const projects = [
+  {
+    name: "Atlas Mobile App", short: "AM", color: PALETTE.blue, owner: "Mobile Team",
+    desc: "Cross-platform rewrite of the consumer app with offline-first sync.",
+    progress: 72, status: "on-track", due: "2026-08-14", overdue: false,
+    tasksDone: 58, tasksTotal: 80, budget: "68%",
+    team: [["JL", PALETTE.blue], ["MR", PALETTE.purple], ["SK", PALETTE.teal], ["+3", PALETTE.red]],
+    milestones: [
+      { label: "Design system", date: "Apr 2", done: true },
+      { label: "Auth & onboarding", date: "May 10", done: true },
+      { label: "Offline sync engine", date: "Jun 28", done: false, active: true },
+      { label: "Beta release", date: "Aug 14", done: false }
+    ]
+  },
+  {
+    name: "Payments Gateway", short: "PG", color: PALETTE.green, owner: "Platform",
+    desc: "PCI-compliant payment processing layer with multi-currency support.",
+    progress: 45, status: "at-risk", due: "2026-07-30", overdue: false,
+    tasksDone: 27, tasksTotal: 60, budget: "81%",
+    team: [["AD", PALETTE.green], ["TN", PALETTE.amber], ["+2", PALETTE.blue]],
+    milestones: [
+      { label: "Provider integration", date: "Mar 18", done: true },
+      { label: "Fraud detection", date: "Jun 5", done: false, active: true },
+      { label: "Multi-currency", date: "Jul 12", done: false },
+      { label: "Go-live", date: "Jul 30", done: false }
+    ]
+  },
+  {
+    name: "Data Lake Migration", short: "DL", color: PALETTE.amber, owner: "Data Eng",
+    desc: "Migrating legacy warehouse into a unified, queryable data lake.",
+    progress: 30, status: "delayed", due: "2026-06-20", overdue: true,
+    tasksDone: 18, tasksTotal: 64, budget: "92%",
+    team: [["RB", PALETTE.amber], ["KP", PALETTE.pink], ["+4", PALETTE.purple]],
+    milestones: [
+      { label: "Schema mapping", date: "Feb 28", done: true },
+      { label: "ETL pipelines", date: "May 1", done: true },
+      { label: "Backfill historical", date: "Jun 20", done: false, active: true },
+      { label: "Cutover", date: "Jul 15", done: false }
+    ]
+  },
+  {
+    name: "Brand Refresh 2026", short: "BR", color: PALETTE.pink, owner: "Marketing",
+    desc: "Complete visual identity overhaul across web, print, and social.",
+    progress: 100, status: "done", due: "2026-05-30", overdue: false,
+    tasksDone: 42, tasksTotal: 42, budget: "97%",
+    team: [["EW", PALETTE.pink], ["JC", PALETTE.teal]],
+    milestones: [
+      { label: "Logo & palette", date: "Feb 10", done: true },
+      { label: "Web rollout", date: "Apr 5", done: true },
+      { label: "Social templates", date: "May 12", done: true },
+      { label: "Launch campaign", date: "May 30", done: true }
+    ]
+  },
+  {
+    name: "Internal API v3", short: "AP", color: PALETTE.purple, owner: "Backend",
+    desc: "GraphQL-based internal API consolidating 14 legacy REST services.",
+    progress: 88, status: "on-track", due: "2026-07-08", overdue: false,
+    tasksDone: 70, tasksTotal: 79, budget: "59%",
+    team: [["HM", PALETTE.purple], ["DV", PALETTE.blue], ["LS", PALETTE.green], ["+1", PALETTE.amber]],
+    milestones: [
+      { label: "Schema design", date: "Mar 1", done: true },
+      { label: "Service migration", date: "May 20", done: true },
+      { label: "Rate limiting & auth", date: "Jun 18", done: true },
+      { label: "Deprecate v2", date: "Jul 8", done: false, active: true }
+    ]
+  },
+  {
+    name: "Customer Insights", short: "CI", color: PALETTE.teal, owner: "Analytics",
+    desc: "Self-serve dashboard surfacing churn signals and cohort retention.",
+    progress: 58, status: "on-track", due: "2026-09-01", overdue: false,
+    tasksDone: 33, tasksTotal: 57, budget: "44%",
+    team: [["NF", PALETTE.teal], ["OG", PALETTE.red], ["+2", PALETTE.pink]],
+    milestones: [
+      { label: "Data model", date: "Apr 14", done: true },
+      { label: "Cohort engine", date: "Jun 2", done: true },
+      { label: "Dashboard UI", date: "Jul 25", done: false, active: true },
+      { label: "GA rollout", date: "Sep 1", done: false }
+    ]
+  }
+];
+
+/* ---------------- Helpers ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function fmtDate(iso) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/* ---------------- Stats ---------------- */
+function renderStats() {
+  const total = projects.length;
+  const done = projects.filter(p => p.status === "done").length;
+  const atRisk = projects.filter(p => p.status === "at-risk" || p.status === "delayed").length;
+  const avg = Math.round(projects.reduce((s, p) => s + p.progress, 0) / total);
+
+  const cards = [
+    { label: "Active Projects", value: total, sub: `${done} completed`, color: PALETTE.blue },
+    { label: "Avg. Progress", value: avg + "%", sub: "across portfolio", color: PALETTE.purple },
+    { label: "Needs Attention", value: atRisk, sub: "at risk or delayed", color: PALETTE.amber },
+    { label: "Completed", value: done, sub: "shipped this cycle", color: PALETTE.green }
+  ];
+
+  $("#statsRow").innerHTML = cards.map(c => `
+    <div class="stat">
+      <span class="accent-bar" style="background:${c.color}"></span>
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="sub">${c.sub}</div>
+    </div>`).join("");
+}
+
+/* ---------------- Cards ---------------- */
+let activeFilter = "all";
+let searchTerm = "";
+
+function cardHTML(p, idx) {
+  const avatars = p.team.map(([t, c]) =>
+    `<span class="a" style="background:${c}">${t}</span>`).join("");
+  const dueClass = p.overdue ? "due overdue" : "due";
+  const dueIcon = p.overdue ? "⚠" : "◷";
+  return `
+    <div class="card" data-idx="${idx}">
+      <div class="card-head">
+        <div class="card-title-wrap">
+          <div class="card-avatar" style="background:${p.color}">${p.short}</div>
+          <div style="min-width:0">
+            <div class="card-title">${p.name}</div>
+            <div class="card-owner">${p.owner}</div>
+          </div>
+        </div>
+        <span class="badge ${p.status}">${STATUS_LABEL[p.status]}</span>
+      </div>
+      <div class="card-desc">${p.desc}</div>
+      <div>
+        <div class="progress-row">
+          <span class="ptext">Progress</span>
+          <span class="pval" style="color:${STATUS_COLOR[p.status]}">${p.progress}%</span>
+        </div>
+        <div class="bar"><span data-w="${p.progress}" style="background:${STATUS_COLOR[p.status]}"></span></div>
+      </div>
+      <div class="card-meta">
+        <div class="meta-item"><span class="mi-val">${p.tasksDone}</span>/${p.tasksTotal} tasks</div>
+        <div class="avatars">${avatars}</div>
+        <div class="${dueClass}">${dueIcon} ${fmtDate(p.due)}</div>
+      </div>
+    </div>`;
+}
+
+function renderGrid() {
+  const grid = $("#grid");
+  const filtered = projects
+    .map((p, i) => ({ p, i }))
+    .filter(({ p }) => activeFilter === "all" || p.status === activeFilter)
+    .filter(({ p }) => {
+      if (!searchTerm) return true;
+      const t = searchTerm.toLowerCase();
+      return p.name.toLowerCase().includes(t) || p.owner.toLowerCase().includes(t);
+    });
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty"><div class="big">⌕</div>No projects match your filters.</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(({ p, i }) => cardHTML(p, i)).join("");
+  // animate bars
+  requestAnimationFrame(() => {
+    $$(".bar > span", grid).forEach(s => { s.style.width = s.dataset.w + "%"; });
+  });
+  $$(".card", grid).forEach(c =>
+    c.addEventListener("click", () => openModal(+c.dataset.idx)));
+}
+
+/* ---------------- Modal ---------------- */
+function openModal(idx) {
+  const p = projects[idx];
+  const ms = p.milestones.map(m => {
+    const cls = m.done ? "done" : (m.active ? "active" : "");
+    const icon = m.done ? "✓" : (m.active ? "●" : "");
+    return `
+      <div class="milestone">
+        <div class="ms-dot ${cls}">${icon}</div>
+        <div class="ms-label ${m.done ? "done" : ""}">${m.label}</div>
+        <div class="ms-date">${m.date}</div>
+      </div>`;
+  }).join("");
+
+  $("#modal").innerHTML = `
+    <div class="modal-head">
+      <div style="display:flex;gap:13px;align-items:center;min-width:0">
+        <div class="card-avatar" style="background:${p.color}">${p.short}</div>
+        <div style="min-width:0">
+          <h2>${p.name}</h2>
+          <div class="m-owner">${p.owner} · <span style="color:${STATUS_COLOR[p.status]}">${STATUS_LABEL[p.status]}</span></div>
+        </div>
+      </div>
+      <button class="close-x" id="closeX" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13.5px;color:var(--text-dim);margin-bottom:20px">${p.desc}</p>
+
+      <div class="progress-row">
+        <span class="ptext">Overall progress</span>
+        <span class="pval" style="color:${STATUS_COLOR[p.status]}">${p.progress}%</span>
+      </div>
+      <div class="bar" style="margin-bottom:22px"><span style="width:${p.progress}%;background:${STATUS_COLOR[p.status]}"></span></div>
+
+      <div class="stat-mini-row">
+        <div class="stat-mini"><div class="v">${p.tasksDone}/${p.tasksTotal}</div><div class="l">Tasks</div></div>
+        <div class="stat-mini"><div class="v">${p.budget}</div><div class="l">Budget used</div></div>
+        <div class="stat-mini"><div class="v" style="${p.overdue ? "color:var(--red)" : ""}">${fmtDate(p.due)}</div><div class="l">${p.overdue ? "Overdue" : "Due date"}</div></div>
+      </div>
+
+      <div class="m-section-title">Milestones</div>
+      ${ms}
+
+      <div class="m-section-title">Team</div>
+      <div class="avatars" style="margin-top:2px">${p.team.map(([t, c]) => `<span class="a" style="background:${c};width:30px;height:30px;font-size:11px">${t}</span>`).join("")}</div>
+    </div>`;
+
+  $("#closeX").addEventListener("click", closeModal);
+  const bd = $("#modalBackdrop");
+  bd.classList.add("show");
+  // animate inner bar
+  requestAnimationFrame(() => {
+    const inner = $(".modal-body .bar > span");
+    inner.style.width = "0";
+    requestAnimationFrame(() => inner.style.width = p.progress + "%");
+  });
+}
+function closeModal() { $("#modalBackdrop").classList.remove("show"); }
+
+/* ---------------- Events ---------------- */
+$("#modalBackdrop").addEventListener("click", e => {
+  if (e.target.id === "modalBackdrop") closeModal();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+$("#filters").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  $$(".chip").forEach(c => c.classList.remove("active"));
+  chip.classList.add("active");
+  activeFilter = chip.dataset.filter;
+  renderGrid();
+});
+
+$("#searchInput").addEventListener("input", e => {
+  searchTerm = e.target.value.trim();
+  renderGrid();
+});
+
+/* ---------------- Theme ---------------- */
+const themeBtn = $("#themeBtn");
+function applyTheme(t) {
+  if (t === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    themeBtn.textContent = "☀";
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    themeBtn.textContent = "☾";
+  }
+}
+let theme = "dark";
+themeBtn.addEventListener("click", () => {
+  theme = theme === "dark" ? "light" : "dark";
+  applyTheme(theme);
+});
+
+/* ---------------- Init ---------------- */
+renderStats();
+renderGrid();
+</script>
+</body>
+</html>
