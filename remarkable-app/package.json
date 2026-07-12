@@ -1,0 +1,20 @@
+{
+  "name": "remarkable-app",
+  "version": "1.0.0",
+  "description": "Local web app + CLI to browse, upload to, and download from your reMarkable tablet via the reMarkable cloud",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "cli": "node src/cli.js"
+  },
+  "bin": {
+    "rmk": "src/cli.js"
+  },
+  "dependencies": {
+    "rmapi-js": "^11.0.0"
+  }
+}

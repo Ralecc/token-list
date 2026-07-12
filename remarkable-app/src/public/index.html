@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>reMarkable</title>
+<style>
+  :root {
+    --bg: #f6f5f3;
+    --panel: #ffffff;
+    --ink: #1d1d1b;
+    --muted: #79766f;
+    --line: #e5e2dc;
+    --accent: #1d1d1b;
+    --danger: #b3382c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #171715;
+      --panel: #201f1d;
+      --ink: #ecebe7;
+      --muted: #97948c;
+      --line: #33322e;
+      --accent: #ecebe7;
+      --danger: #e07a6e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 20px 24px 12px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: 0.02em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  header .spacer { flex: 1; }
+  main { max-width: 860px; margin: 0 auto; padding: 0 24px 48px; }
+  button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  button.link {
+    border: none;
+    background: none;
+    padding: 2px 6px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  button.link:hover { color: var(--ink); }
+  button.link.danger:hover { color: var(--danger); }
+  input[type="text"] {
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--ink);
+    width: 100%;
+  }
+
+  #pairing {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+    max-width: 480px;
+  }
+  #pairing p { color: var(--muted); font-size: 14px; }
+  #pairing form { display: flex; gap: 8px; margin-top: 12px; }
+  #pairing input { letter-spacing: 0.2em; text-transform: lowercase; }
+
+  #crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  #crumbs a { color: inherit; text-decoration: none; padding: 2px 4px; border-radius: 6px; }
+  #crumbs a:hover { color: var(--ink); background: var(--line); }
+  #crumbs .here { color: var(--ink); font-weight: 600; padding: 2px 4px; }
+
+  #drop {
+    border: 1.5px dashed var(--line);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin: 8px 0 16px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  #drop.over { border-color: var(--ink); background: var(--panel); }
+  #drop button { margin-left: 8px; }
+
+  ul.entries { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+  ul.entries:empty { display: none; }
+  ul.entries li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  ul.entries li:last-child { border-bottom: none; }
+  ul.entries .icon { width: 20px; text-align: center; flex: none; }
+  ul.entries .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  ul.entries .name.folder { cursor: pointer; font-weight: 600; }
+  ul.entries .name.folder:hover { text-decoration: underline; }
+  ul.entries .date { color: var(--muted); font-size: 12.5px; flex: none; }
+  ul.entries .actions { flex: none; display: flex; gap: 2px; opacity: 0.25; }
+  ul.entries li:hover .actions { opacity: 1; }
+
+  #empty { color: var(--muted); text-align: center; padding: 32px 0; }
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    max-width: 80vw;
+  }
+  #toast.show { opacity: 1; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>reMarkable</h1>
+  <span class="sub">your tablet, in the browser</span>
+  <span class="spacer"></span>
+  <button id="new-folder" class="hidden">New folder</button>
+  <button id="unpair" class="link hidden">Unpair</button>
+</header>
+<main>
+  <section id="pairing" class="hidden">
+    <h2 style="margin:0;font-size:16px">Pair with your reMarkable</h2>
+    <p>
+      Get a one-time code at
+      <a href="https://my.remarkable.com/device/desktop/connect" target="_blank" rel="noreferrer">my.remarkable.com/device/desktop/connect</a>
+      (sign in with the same account as your tablet), then enter it below.
+    </p>
+    <form id="pair-form">
+      <input type="text" id="pair-code" placeholder="one-time code" autocomplete="off" spellcheck="false" maxlength="8" />
+      <button class="primary" type="submit">Pair</button>
+    </form>
+  </section>
+
+  <section id="browser" class="hidden">
+    <nav id="crumbs"></nav>
+    <div id="drop">
+      Drag &amp; drop a PDF or EPUB here to send it to your tablet
+      <button id="pick">Choose file…</button>
+      <input type="file" id="file-input" accept=".pdf,.epub" multiple class="hidden" />
+    </div>
+    <ul class="entries" id="entries"></ul>
+    <div id="empty" class="hidden">This folder is empty.</div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+let allItems = [];
+let cwd = ""; // "" = root ("My files")
+
+function toast(msg, ms = 3500) {
+  const el = $("#toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), ms);
+}
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const isJson = (res.headers.get("content-type") || "").includes("json");
+  const body = isJson ? await res.json() : null;
+  if (!res.ok) throw new Error(body?.error || res.statusText);
+  return body;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+function renderCrumbs() {
+  const crumbs = [];
+  let id = cwd;
+  while (id) {
+    const item = allItems.find((i) => i.id === id);
+    if (!item) break;
+    crumbs.unshift(item);
+    id = item.parent;
+  }
+  const nav = $("#crumbs");
+  nav.innerHTML = "";
+  const root = document.createElement(cwd ? "a" : "span");
+  root.textContent = "My files";
+  root.className = cwd ? "" : "here";
+  if (cwd) { root.href = "#"; root.onclick = (e) => { e.preventDefault(); cwd = ""; render(); }; }
+  nav.append(root);
+  for (const c of crumbs) {
+    nav.append(" / ");
+    const isHere = c.id === cwd;
+    const el = document.createElement(isHere ? "span" : "a");
+    el.textContent = c.name;
+    el.className = isHere ? "here" : "";
+    if (!isHere) { el.href = "#"; el.onclick = (e) => { e.preventDefault(); cwd = c.id; render(); }; }
+    nav.append(el);
+  }
+}
+
+function entryRow(item) {
+  const li = document.createElement("li");
+  const icon = document.createElement("span");
+  icon.className = "icon";
+  icon.textContent = item.type === "folder" ? "📁" : "📄";
+
+  const name = document.createElement("span");
+  name.className = "name" + (item.type === "folder" ? " folder" : "");
+  name.textContent = item.name;
+  if (item.type === "folder") name.onclick = () => { cwd = item.id; render(); };
+
+  const date = document.createElement("span");
+  date.className = "date";
+  date.textContent = fmtDate(item.lastModified);
+
+  const actions = document.createElement("span");
+  actions.className = "actions";
+  const btn = (label, fn, cls = "") => {
+    const b = document.createElement("button");
+    b.className = "link " + cls;
+    b.textContent = label;
+    b.onclick = fn;
+    actions.append(b);
+  };
+  if (item.type === "document") {
+    btn("download", () => {
+      const q = new URLSearchParams({ id: item.id, hash: item.hash, name: item.name });
+      window.location = "/api/download?" + q;
+    });
+  }
+  btn("rename", async () => {
+    const name = prompt("New name:", item.name);
+    if (!name || name === item.name) return;
+    await run(api("/api/rename", post({ hash: item.hash, name })), `Renamed to “${name}”`);
+  });
+  btn("trash", async () => {
+    if (!confirm(`Move “${item.name}” to trash?`)) return;
+    await run(api("/api/trash", post({ hash: item.hash })), `Moved “${item.name}” to trash`);
+  }, "danger");
+
+  li.append(icon, name, date, actions);
+  return li;
+}
+
+function render() {
+  renderCrumbs();
+  const list = $("#entries");
+  list.innerHTML = "";
+  const here = allItems
+    .filter((i) => i.parent === cwd)
+    .sort((a, b) => (a.type !== b.type ? (a.type === "folder" ? -1 : 1) : a.name.localeCompare(b.name)));
+  for (const item of here) list.append(entryRow(item));
+  $("#empty").classList.toggle("hidden", here.length > 0);
+}
+
+const post = (body) => ({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+async function refresh() {
+  const { items } = await api("/api/items");
+  allItems = items.filter((i) => i.parent !== "trash");
+  render();
+}
+
+async function run(promise, successMsg) {
+  try {
+    await promise;
+    if (successMsg) toast(successMsg);
+    await refresh();
+  } catch (err) {
+    toast("Error: " + err.message, 6000);
+  }
+}
+
+async function uploadFiles(files) {
+  for (const file of files) {
+    if (!/\.(pdf|epub)$/i.test(file.name)) {
+      toast(`Skipping ${file.name} — only PDF and EPUB are supported`);
+      continue;
+    }
+    toast(`Uploading ${file.name}…`, 60000);
+    try {
+      const { entry } = await api("/api/upload?name=" + encodeURIComponent(file.name), {
+        method: "POST",
+        body: file,
+      });
+      // New uploads land in the root; move into the current folder if needed.
+      if (cwd) await api("/api/move", post({ hash: entry.hash, parent: cwd }));
+      toast(`Uploaded ${file.name} — it will appear on your tablet shortly`);
+    } catch (err) {
+      toast(`Upload failed: ${err.message}`, 6000);
+    }
+  }
+  await refresh();
+}
+
+function showPairing(paired) {
+  $("#pairing").classList.toggle("hidden", paired);
+  $("#browser").classList.toggle("hidden", !paired);
+  $("#new-folder").classList.toggle("hidden", !paired);
+  $("#unpair").classList.toggle("hidden", !paired);
+}
+
+// --- wire up ---
+$("#pair-form").onsubmit = async (e) => {
+  e.preventDefault();
+  const code = $("#pair-code").value.trim();
+  if (!code) return;
+  toast("Pairing…", 30000);
+  try {
+    await api("/api/pair", post({ code }));
+    toast("Paired!");
+    showPairing(true);
+    await refresh();
+  } catch (err) {
+    toast("Pairing failed: " + err.message, 6000);
+  }
+};
+
+$("#unpair").onclick = async () => {
+  if (!confirm("Forget this device pairing?")) return;
+  await api("/api/unpair", post({}));
+  allItems = [];
+  showPairing(false);
+};
+
+$("#new-folder").onclick = async () => {
+  const name = prompt("Folder name:");
+  if (!name) return;
+  await run(api("/api/folder", post({ name, parent: cwd })), `Created “${name}”`);
+};
+
+$("#pick").onclick = () => $("#file-input").click();
+$("#file-input").onchange = (e) => uploadFiles([...e.target.files]);
+
+const drop = $("#drop");
+for (const ev of ["dragenter", "dragover"]) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); });
+for (const ev of ["dragleave", "drop"]) drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); });
+drop.addEventListener("drop", (e) => uploadFiles([...e.dataTransfer.files]));
+
+(async () => {
+  const { paired } = await api("/api/status");
+  showPairing(paired);
+  if (paired) {
+    try {
+      await refresh();
+    } catch (err) {
+      toast("Could not load files: " + err.message, 8000);
+    }
+  }
+})();
+</script>
+</body>
+</html>
