@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Companion</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23ff7aa8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/",
+        "@pixiv/three-vrm": "/vendor/three-vrm/three-vrm.module.min.js"
+      }
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <section class="stage" id="stage">
+      <canvas id="avatar"></canvas>
+      <div class="orb" id="orb" hidden></div>
+
+      <div class="empty" id="empty" hidden>
+        <p><strong>No avatar yet.</strong> Drop a <code>.vrm</code> file here or put one in <code>companion/models/</code>.</p>
+        <p>You can make one for free in VRoid Studio.</p>
+        <button type="button" class="btn" id="pickAvatar">Choose a .vrm file…</button>
+      </div>
+      <div class="loading" id="loading" hidden></div>
+      <div class="drop" id="drop" hidden>Drop to use this avatar</div>
+
+      <header class="topbar">
+        <div class="who"><span class="presence" id="presence"></span><span id="name">…</span></div>
+        <div class="pill" id="status">Offline</div>
+        <div class="timer" id="timer"></div>
+      </header>
+
+      <p class="captions" id="captions" aria-live="polite"></p>
+      <div class="toast" id="toast" role="status" hidden></div>
+      <video class="self" id="self" autoplay playsinline muted hidden></video>
+
+      <nav class="controls" aria-label="Call controls">
+        <button type="button" class="ctl" id="micBtn" aria-label="Mute microphone" disabled>
+          <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button type="button" class="ctl" id="camBtn" aria-label="Turn camera off" disabled>
+          <svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        </button>
+        <button type="button" class="ctl call" id="callBtn" aria-label="Start call">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </button>
+        <button type="button" class="ctl" id="chatBtn" aria-label="Messages">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button type="button" class="ctl" id="settingsBtn" aria-label="Settings">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        </button>
+      </nav>
+    </section>
+
+    <aside class="chat" id="chat" hidden>
+      <header>
+        <h2>Messages</h2>
+        <button type="button" class="icon" id="closeChat" aria-label="Close messages">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </header>
+      <ol class="log" id="log"></ol>
+      <form class="composer" id="composer">
+        <input id="input" autocomplete="off" placeholder="Message…" enterkeyhint="send" aria-label="Message">
+        <button type="submit" class="icon" aria-label="Send">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </aside>
+  </div>
+
+
+  <dialog id="settings">
+    <form method="dialog" class="settings" id="settingsForm">
+      <h2>Settings</h2>
+      <label>Your name
+        <input name="userName" maxlength="40" placeholder="What should she call you?">
+      </label>
+      <label id="personaRow">Character
+        <select name="persona"></select>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="vision">
+        <span>Let her see you<small id="visionHint"></small></span>
+      </label>
+      <label class="check">
+        <input type="checkbox" name="adultMode">
+        <span>Adult mode (18+)<small id="adultHint"></small></span>
+      </label>
+      <label id="voiceRow" hidden>Voice
+        <select name="voice"></select>
+      </label>
+      <p class="engines" id="engines"></p>
+      <div class="row">
+        <button type="button" class="btn" id="changeAvatar">Change avatar…</button>
+        <button type="button" class="btn danger" id="resetMemory">Forget everything</button>
+      </div>
+      <div class="row end">
+        <button class="btn" value="cancel" formnovalidate>Close</button>
+        <button class="btn primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <input type="file" id="fileInput" accept=".vrm" hidden>
+</body>
+</html>
